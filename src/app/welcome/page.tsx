@@ -26,7 +26,7 @@ const Page = () => {
           </div>
         </div>
       </Container>
-      <p className="text-xl text-center py-8">Built by Nivaaz 2024</p>
+      <p className="text-xl text-center py-8">Pheydrus Tools 2024</p>
     </div>
   );
 };

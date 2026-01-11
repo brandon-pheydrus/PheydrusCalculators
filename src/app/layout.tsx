@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className={openSans.className}>
         <>
           <nav className="text-center text-xs bg-cyan-50 dark:bg-cyan-800 flex flex-row justify-center p-1 ">
-            <p className="my-auto"> Pheydrus Tools by Nivaaz </p>
+            <p className="my-auto"> Pheydrus Tools </p>
           </nav>
           <div className="w-full m-auto p-4 min-h-screen">{children}</div>
         </>

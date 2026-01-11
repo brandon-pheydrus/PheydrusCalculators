@@ -3,18 +3,11 @@ import { ReactNode, useState } from "react";
 import Container from "../components/container";
 import {
   AstrologyAspect,
-  astrologyDefaultData,
   AstrologyPlanet,
   findRisingSign,
-  houseIndexByRisingSign,
 } from "./constants";
 import { getAspectsByPlanet } from "./utils";
-import { Astrocartography } from "./astrocartography";
-
-type AstrologyApiResponse = {
-  // TODO: type this properly based on actual API response
-  [key: string]: unknown;
-};
+import { calculateNatalChart, NatalChartResult } from "@/lib/astro/natalChart";
 
 const planetBadgeColors = [
   "bg-indigo-100 text-indigo-900",
@@ -54,24 +47,10 @@ const Astrology = () => {
     time: "",
     location: "",
   });
-  const planets = astrologyDefaultData.planets.output;
-  const aspects = astrologyDefaultData.aspects.output;
-
-  const planetColorMap = createColorMap(
-    [
-      ...planets.map((planet) => planet.planet.en),
-      ...aspects.flatMap((aspect) => [aspect.planet_1.en, aspect.planet_2.en]),
-    ],
-    planetBadgeColors
-  );
-  const signColorMap = createColorMap(
-    planets.map((planet) => planet.zodiac_sign.name.en),
-    signBadgeColors
-  );
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [astroData, setAstroData] = useState<AstrologyApiResponse | null>(null);
+  const [chartData, setChartData] = useState<NatalChartResult | null>(null);
 
   const handleChange =
     (field: keyof typeof birthDetails) =>
@@ -92,7 +71,7 @@ const Astrology = () => {
 
     setLoading(true);
     setErrorMessage(null);
-    setAstroData(null);
+    setChartData(null);
 
     try {
       const [year, month, date] = birthDetails.dob
@@ -108,42 +87,47 @@ const Astrology = () => {
         throw new Error("Unable to parse birth date or time.");
       }
 
-      const response = await fetch("/api/astrology", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          year,
-          month,
-          date,
-          hours,
-          minutes,
-          seconds: 0,
-          latitude: 17.38405,
-          longitude: 78.45636,
-          timezone: 5.5,
-        }),
+      // Use Swiss Ephemeris (client-side, unlimited, no API key needed)
+      const data = await calculateNatalChart({
+        year,
+        month,
+        date,
+        hours,
+        minutes,
+        seconds: 0,
+        latitude: 17.38405,  // TODO: Get from location input
+        longitude: 78.45636, // TODO: Get from location input
+        timezone: 5.5,       // TODO: Get from location input
       });
 
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
-      }
-
-      const data = (await response.json()) as AstrologyApiResponse;
-      setAstroData(data);
-
+      setChartData(data);
       console.log({ data });
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Something went wrong fetching the chart."
+          : "Something went wrong calculating the chart."
       );
     } finally {
       setLoading(false);
     }
   };
+
+  // Use chart data if available, otherwise show empty state
+  const planets = chartData?.planets.output ?? [];
+  const aspects = chartData?.aspects.output ?? [];
+
+  const planetColorMap = createColorMap(
+    [
+      ...planets.map((planet) => planet.planet.en),
+      ...aspects.flatMap((aspect) => [aspect.planet_1.en, aspect.planet_2.en]),
+    ],
+    planetBadgeColors
+  );
+  const signColorMap = createColorMap(
+    planets.map((planet) => planet.zodiac_sign.name.en),
+    signBadgeColors
+  );
 
   const hasValues = Object.values(birthDetails).some((value) => value.trim());
 
@@ -219,21 +203,25 @@ const Astrology = () => {
               {errorMessage}
             </p>
           ) : null}
-          {astroData && (
-            <div className="w-full overflow-x-auto rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-              {/* <AstrologyChartDisplay source={astroData.output || ""} /> */}
-            </div>
+          {chartData && planets.length > 0 && (
+            <>
+              <Planets
+                planets={planets}
+                planetColorMap={planetColorMap}
+                signColorMap={signColorMap}
+              />
+              <Aspects
+                aspects={aspects}
+                birthDate={birthDetails.dob}
+                birthTime={birthDetails.time}
+              />
+            </>
           )}
-          <Planets
-            planets={planets}
-            planetColorMap={planetColorMap}
-            signColorMap={signColorMap}
-          />
-          <Aspects
-            aspects={aspects}
-            birthDate={birthDetails.dob}
-            birthTime={birthDetails.time}
-          />
+          {!chartData && !loading && (
+            <p className="text-sm text-center text-slate-500 py-8">
+              Enter your birth details and click &quot;Generate Natal Chart&quot; to see your chart.
+            </p>
+          )}
         </Container>
       </div>
     </div>

@@ -5,7 +5,7 @@ const Intro = () => {
     <Container>
       <h1 className="text-4xl py-4">
         {" "}
-        Pheydrus Tools - Flying Star Feng Shui By Nivaaz 📍{" "}
+        Pheydrus Tools - Flying Star Feng Shui 📍{" "}
       </h1>
       <div className="print:hidden">
         <p className="text-lg py-4 "> What is this page?</p>
